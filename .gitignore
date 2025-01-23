@@ -2,7 +2,6 @@
 .venv
 faiss_index
 __pycache__/
-drugs_v2.json
 google-auth.json
 model-task.txt
 
