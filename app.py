@@ -73,13 +73,13 @@ def prepare_data_for_faiss(drugs_list):
 
 documents = prepare_data_for_faiss(drugs)
 embeddings = OpenAIEmbeddings()
-# faiss_store = FAISS.from_texts(
-#     documents,
-#     embeddings,
-#     metadatas=drugs  # Store original metadata for result retrieval
-# )
+faiss_store = FAISS.from_texts(
+    documents,
+    embeddings,
+    metadatas=drugs  # Store original metadata for result retrieval
+)
 
-# faiss_store.save_local("faiss_index")
+faiss_store.save_local("faiss_index")
 faiss_store = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
 
 # Initialize Retrieval Chain
