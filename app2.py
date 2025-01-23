@@ -5,7 +5,10 @@ from flask import Flask, request, jsonify
 import io
 import json
 from google.cloud import vision
-from langchain_openai import ChatOpenAI
+from langchain.chains import RetrievalQA
+from langchain.vectorstores import FAISS
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.chat_models import ChatOpenAI
 from google.oauth2 import service_account
 from dotenv import load_dotenv
 
@@ -51,7 +54,41 @@ def get_credentials_from_env_variables():
 credentials = get_credentials_from_env_variables()
 client = vision.ImageAnnotatorClient(credentials=credentials)
 
+# Initialize Vision API Client
+# client = vision.ImageAnnotatorClient()
+
+# Load Drugs Data
+with open("drugs_v2.json", "r") as file:
+    drugs = json.load(file)
+
+# Prepare FAISS
+def prepare_data_for_faiss(drugs_list):
+    documents = []
+    for entry in drugs_list:
+        document_text = " ".join(
+            f"{key}: {value}" for key, value in entry.items() if value
+        )
+        documents.append(document_text)
+    return documents
+
+documents = prepare_data_for_faiss(drugs)
+embeddings = OpenAIEmbeddings()
+faiss_store = FAISS.from_texts(
+    documents,
+    embeddings,
+    metadatas=drugs  # Store original metadata for result retrieval
+)
+
+faiss_store.save_local("faiss_index")
+faiss_store = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
+
+# Initialize Retrieval Chain
 llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")
+retriever = faiss_store.as_retriever(search_kwargs={"k": 1})
+retrieval_qa = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=faiss_store.as_retriever()
+)
 
 # Define Categories
 categories = {
@@ -138,10 +175,17 @@ def process_query(ocr_text):
     if not identified_drug.get("name", None):
         return {"error": "No valid drug identified."}
     print(identified_drug)
-
+    # response = retrieval_qa.run(query)
+    # results = retriever.get_relevant_documents(json.dumps(identified_drug))
+    # results_with_scores = faiss_store.similarity_search_with_score(json.dumps(identified_drug), k=1)
+    # best_match_document, score = results_with_scores[0]
+    # best_match = best_match_document.metadata
+    # print(identified_drug, best_match.get("name"))
     result = {
         "name": identified_drug.get("name", None),
+        # "atc": best_match.get("atc", None),
         "concentration": identified_drug.get("concentration", None),
+        # "prescription": best_match.get("prescription"),
         "category": identified_drug.get("category"),
         "ocr_result": ocr_text
     }

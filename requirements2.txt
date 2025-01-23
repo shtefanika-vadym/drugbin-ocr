@@ -1,0 +1,8 @@
+Flask
+google-cloud-vision
+langchain
+openai
+gunicorn
+langchain-community
+tiktoken
+faiss-cpu

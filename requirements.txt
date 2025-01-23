@@ -1,8 +1,5 @@
 Flask
 google-cloud-vision
-langchain
-openai
+langchain-openai
 gunicorn
-langchain-community
-tiktoken
-faiss-cpu
+python-dotenv
