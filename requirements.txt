@@ -3,3 +3,4 @@ google-cloud-vision
 langchain-openai
 gunicorn
 python-dotenv
+requests

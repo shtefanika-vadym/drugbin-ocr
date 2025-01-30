@@ -1,6 +1,7 @@
 import os
 import tempfile
 
+import requests
 from flask import Flask, request, jsonify
 import io
 import json
@@ -8,6 +9,8 @@ from google.cloud import vision
 from langchain_openai import ChatOpenAI
 from google.oauth2 import service_account
 from dotenv import load_dotenv
+
+from concurrent.futures import ThreadPoolExecutor
 
 # Load environment variables from .env file
 load_dotenv()
@@ -147,6 +150,10 @@ def process_query(ocr_text):
     }
     return result
 
+def send_recycle_request(recycle):
+    response = requests.post('https://drugbin-backend-nestjs-production.up.railway.app/recycle', json=recycle)
+    print(response.json())
+
 @app.route('/process', methods=['POST'])
 def process_image():
     if 'image' not in request.files:
@@ -157,6 +164,23 @@ def process_image():
     try:
         ocr_text = extract_text_from_image(image_path)
         result = process_query(ocr_text)
+        result["quantity"] = 1
+        result["pack"] = "box"
+
+        recycle = {
+            "firstName": "Anonim",
+            "hospitalId": 161,
+            "lastName": "Anonim",
+            "email": None,
+            "drugList": [result],
+            "address": None,
+            "cnp": None
+        }
+
+        # Use ThreadPoolExecutor to send the request in parallel
+        executor = ThreadPoolExecutor(max_workers=1)
+        executor.submit(send_recycle_request, recycle)
+
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
