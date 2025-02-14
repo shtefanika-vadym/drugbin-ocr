@@ -89,7 +89,7 @@ categories = {
     },
     7: {
         "name": "Psycholeptics",
-        "keywords": ["antipsychotic", "anxiolytic", "schizophrenia", "bipolar"],
+        "keywords": ["antipsychotic", "anxiolytic", "schizophrenia", "bipolar", "diazepam"],
         "atc_prefixes": ["N05"],
     },
 }
@@ -118,6 +118,7 @@ def extract_text_from_image(image_path):
     image = vision.Image(content=content)
     response = client.text_detection(image=image)
     texts = response.text_annotations
+    print(texts)
     if response.error.message:
         raise Exception(f'Error with Vision API: {response.error.message}')
     if texts:
